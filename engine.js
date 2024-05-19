@@ -1,4 +1,4 @@
-"use strict";
+var {mat4,vec3} = glMatrix
 
 const skinVS = `#version 300 es
 in vec4 a_POSITION;
@@ -124,15 +124,19 @@ async function main() {
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     }
     update(node) {
-      const globalWorldInverse = m4.inverse(node.worldMatrix);
+      //const globalWorldInverse = m4.inverse(node.worldMatrix);
+      let globalWorldInverse = mat4.create()
+      mat4.invert(globalWorldInverse, node.worldMatrix);
       // go through each joint and get its current worldMatrix
       // apply the inverse bind matrices and store the
       // entire result in the texture
       for (let j = 0; j < this.joints.length; ++j) {
         const joint = this.joints[j];
         const dst = this.jointMatrices[j];
-        m4.multiply(globalWorldInverse, joint.worldMatrix, dst);
-        m4.multiply(dst, this.inverseBindMatrices[j], dst);
+        //m4.multiply(globalWorldInverse, joint.worldMatrix, dst);
+        mat4.multiply(dst, joint.worldMatrix, globalWorldInverse)
+        //m4.multiply(dst, this.inverseBindMatrices[j], dst);
+        mat4.multiply(dst, dst, this.inverseBindMatrices[j])
       }
       gl.bindTexture(gl.TEXTURE_2D, this.jointTexture);
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, 4, this.joints.length, 0,
@@ -148,7 +152,8 @@ async function main() {
     }
     getMatrix(dst) {
       dst = dst || new Float32Array(16);
-      m4.compose(this.position, this.rotation, this.scale, dst);
+      //m4.compose(this.position, this.rotation, this.scale, dst);
+      mat4.fromRotationTranslationScale(dst, this.rotation, this.position, this.scale)
       return dst;
     }
   }
@@ -159,8 +164,10 @@ async function main() {
       this.source = source;
       this.parent = null;
       this.children = [];
-      this.localMatrix = m4.identity();
-      this.worldMatrix = m4.identity();
+      this.localMatrix = mat4.create()
+      mat4.identity(this.localMatrix);
+      this.worldMatrix = mat4.create()
+      mat4.identity(this.worldMatrix);
       this.drawables = [];
     }
     setParent(parent) {
@@ -181,10 +188,12 @@ async function main() {
 
       if (parentWorldMatrix) {
         // a matrix was passed in so do the math
-        m4.multiply(parentWorldMatrix, this.localMatrix, this.worldMatrix);
+        ///m4.multiply(parentWorldMatrix, this.localMatrix, this.worldMatrix);
+        mat4.multiply(this.worldMatrix, parentWorldMatrix, this.localMatrix);
       } else {
         // no matrix was passed in so just copy local to world
-        m4.copy(this.localMatrix, this.worldMatrix);
+        //m4.copy(this.localMatrix, this.worldMatrix);
+        mat4.copy(this.worldMatrix, this.localMatrix)
       }
 
       // now process all the children
@@ -623,7 +632,8 @@ function lerpVec(input, target, percent) {
 
     const fieldOfViewRadians = degToRad(60);
     const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
-    const projection = m4.perspective(fieldOfViewRadians, aspect, 1, 2000);
+    const projection = mat4.create()
+    mat4.perspective(projection, fieldOfViewRadians, aspect, 1, 2000);
 
     const cameraPosition = [10, 0, -5];
     const target = [0, 0, -10];
@@ -632,15 +642,19 @@ function lerpVec(input, target, percent) {
     // const target = [0, 0, 0];
     const up = [0, 1, 0];
     // Compute the camera's matrix using look at.
-    const camera = m4.lookAt(cameraPosition, target, up);
+    const camera = mat4.create()
+    mat4.lookAt(camera, cameraPosition, target, up);
 
     // Make a view matrix from the camera matrix.
-    const view = m4.inverse(camera);
+    const view = mat4.create()
+    mat4.invert(view, camera);
+
 
     animSkin(gltf, gltf.skins[0], time);
 
+    let outVec = vec3.create()
     const sharedUniforms = {
-      u_lightDirection: m4.normalize([-1, 3, 5]),
+      u_lightDirection: vec3.normalize(outVec,[-1, 3, 5]),
     };
 
     function renderDrawables(node) {
