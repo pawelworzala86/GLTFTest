@@ -228,13 +228,23 @@ async function main() {
       gl.useProgram(skinProgramInfo.program);
       for (const primitive of mesh.primitives) {
         gl.bindVertexArray(primitive.vao);
-        twgl.setUniforms(skinProgramInfo, {
+        var uni = uniformsSetter(gl,skinProgramInfo)
+        uni.set({
           u_projection: projection,
           u_view: view,
           u_world: node.worldMatrix,
           u_jointTexture: skin.jointTexture,
           u_numJoints: skin.joints.length,
-        }, primitive.material.uniforms, sharedUniforms);
+        })
+        uni.set(primitive.material.uniforms)
+        uni.set(sharedUniforms)
+        /*twgl.setUniforms(skinProgramInfo, {
+          u_projection: projection,
+          u_view: view,
+          u_world: node.worldMatrix,
+          u_jointTexture: skin.jointTexture,
+          u_numJoints: skin.joints.length,
+        }, primitive.material.uniforms, sharedUniforms);*/
         twgl.drawBufferInfo(gl, primitive.bufferInfo);
       }
     }
