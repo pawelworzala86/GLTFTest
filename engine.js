@@ -245,7 +245,10 @@ async function main() {
           u_jointTexture: skin.jointTexture,
           u_numJoints: skin.joints.length,
         }, primitive.material.uniforms, sharedUniforms);*/
-        twgl.drawBufferInfo(gl, primitive.bufferInfo);
+        //twgl.drawBufferInfo(gl, primitive.bufferInfo);
+        //gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, primitive.bufferInfo.indices);
+        //gl.bindVertexArray(primitive.vao);
+            gl.drawElements(gl.TRIANGLES, primitive.bufferInfo.numElements, gl.UNSIGNED_SHORT, 0);
       }
     }
   }
@@ -360,6 +363,36 @@ async function main() {
     };
   }
 
+
+  function createVAOFromBufferInfo(gl, skinProgramInfo, primitivebufferInfo){
+
+    console.log(skinProgramInfo)
+    console.log(primitivebufferInfo)
+    gl.useProgram(skinProgramInfo.program)
+
+    var vao = gl.createVertexArray();
+    gl.bindVertexArray(vao);
+
+    for(let key of Object.keys(primitivebufferInfo.attribs)){
+      gl.bindBuffer(gl.ARRAY_BUFFER, primitivebufferInfo.attribs[key].buffer);
+      const attribute = gl.getAttribLocation(skinProgramInfo.program, key)
+      if(attribute>-1){
+         gl.vertexAttribPointer(attribute, primitivebufferInfo.attribs[key].numComponents, 
+          gl.FLOAT, false,0,0)
+         gl.enableVertexAttribArray(attribute)
+      }
+    }
+
+    if(primitivebufferInfo.indices){
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, primitivebufferInfo.indices);
+    }
+
+    return vao
+
+  }
+
+
+
   async function loadGLTF(url) {
     const gltf = await loadJSON(url);
 
@@ -428,6 +461,7 @@ async function main() {
         // set the locations but for a larger program we'd need some other
         // solution
         primitive.vao = twgl.createVAOFromBufferInfo(gl, skinProgramInfo, primitive.bufferInfo);
+        //primitive.vao = createVAOFromBufferInfo(gl, skinProgramInfo, primitive.bufferInfo);
 
         // save the material info for this primitive
         primitive.material = gltf.materials && gltf.materials[primitive.material] || defaultMaterial;
