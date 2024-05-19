@@ -253,6 +253,17 @@ async function main() {
   function throwNoKey(key) {
     throw new Error(`no key: ${key}`);
   }
+  function NumSize(val){
+    return {
+        'SCALAR': 1,
+        'VEC2': 2,
+        'VEC3': 3,
+        'VEC4': 4,
+        'MAT2': 4,
+        'MAT3': 9,
+        'MAT4': 16
+    }[val]
+}
 
   const accessorTypeToNumComponentsMap = {
     'SCALAR': 1,
@@ -267,7 +278,17 @@ async function main() {
   function accessorTypeToNumComponents(type) {
     return accessorTypeToNumComponentsMap[type] || throwNoKey(type);
   }
-
+  function glTypedArray(val){
+    return {
+        '5120': Int8Array,
+        '5121': Uint8Array,
+        '5122': Int16Array,
+        '5123': Uint16Array,
+        '5124': Int32Array,
+        '5125': Uint32Array,
+        '5126': Float32Array
+    }[val]
+}
   const glTypeToTypedArrayMap = {
     '5120': Int8Array,    // gl.BYTE
     '5121': Uint8Array,   // gl.UNSIGNED_BYTE
@@ -329,6 +350,16 @@ async function main() {
       const url = new URL(buffer.uri, baseURL.href);
       return loadBinary(url.href);
     }));
+
+
+    gltf['data']=gltf['accessors'].map(accessor=>{
+      const bufferView=gltf['bufferViews'][accessor['bufferView']]
+      const TypedArray = glTypedArray(accessor['componentType'])
+      return new TypedArray(
+          gltf.buffers[bufferView['buffer']],
+          bufferView['byteOffset'],//+ (accessor.byteOffset || 0),
+          accessor['count']* NumSize(accessor['type']))
+  })
 
     const defaultMaterial = {
       uniforms: {
@@ -457,11 +488,29 @@ async function main() {
     return deg * Math.PI / 180;
   }
 
+
+
+
+  function lerp(input, target, percent) {
+    input += (target - input)*percent;
+    return input
+}
+function lerpVec(input, target, percent) {
+    return input.map((p,i)=>lerp(input[i], target[i], percent))
+}
+
+
+
+
+
+
   const origMatrices = new Map();
-  function animSkin(skin, a) {
-    for (let i = 0; i < skin.joints.length; ++i) {
+  function animSkin(model, skin, a) {
+
+
+    /*for (let i = 0; i < skin.joints.length; ++i) {
       const joint = skin.joints[i];
-      // if there is no matrix saved for this joint
+      // if there is no matrix saved for model joint
       if (!origMatrices.has(joint)) {
         // save a matrix for joint
         origMatrices.set(joint, joint.source.getMatrix());
@@ -473,7 +522,93 @@ async function main() {
       // decompose it back into position, rotation, scale
       // into the joint
       m4.decompose(m, joint.source.position, joint.source.rotation, joint.source.scale);
-    }
+    }*/
+
+
+    if(!model.animData){
+      model.animData = {frames: 15}
+  }
+
+
+  if(!model['animations']||!model.animations.length){
+      return
+  }
+
+  //const skin=model['skins'][0]
+
+      const animation=model.animations[0]
+
+
+
+      model.animData.frame = model.animData.frame??0
+      model.animData.percent=model.animData.percent??0.0;
+      model.animData.frames=model.animData.frames??0
+      model.animData.time=model.animData.time??0
+
+  
+      const frametime=0.035
+
+      model.animData.percent=model.animData.time/frametime
+      model.animData.time+=a//delta
+
+      const calcPercent=()=>{
+      while(model.animData.percent>frametime){
+          model.animData.frame++
+          model.animData.time=0
+          model.animData.percent=0
+      }
+      }
+      if(model.animData.frame>model.animData.frames){
+      model.animData.frame=0
+      calcPercent()
+      }
+      if(model.animData.time>frametime){
+      calcPercent()
+      }
+      
+
+    for(const channel of animation['channels']){
+      const target=channel['target']
+      const joint=model.nodes[target['node']]
+      const sampler=animation['samplers'][channel['sampler']]
+      
+      const fname={'translation':'position','rotation':'rotation','scale':'scale',}[channel.target['path']]
+      const len=(fname==='rotation')?4:3
+
+     
+      const accessor=model.data[sampler['output']]
+      
+      if(!model.animData.frames){
+          model.animData.frames=accessor.length/len
+      }
+  
+      if(fname==='rotation'){
+          var value=[accessor[(model.animData.frame*len)+0],accessor[(model.animData.frame*len)+1],accessor[(model.animData.frame*len)+2],accessor[(model.animData.frame*len)+3]]
+      }else{
+          var value=[accessor[(model.animData.frame*len)+0],accessor[(model.animData.frame*len)+1],accessor[(model.animData.frame*len)+2]]
+      }
+
+      let fromVal=[value[0],value[1],value[2],value[3],]
+  
+      const newVal=lerpVec(fromVal, value, model.animData.percent)
+
+      joint.source[fname]=newVal
+
+      //console.log('ENND JOINT',joint)
+      }
+
+
+      
+
+
+
+
+
+
+
+
+
+
   }
 
   function render(time) {
@@ -502,7 +637,7 @@ async function main() {
     // Make a view matrix from the camera matrix.
     const view = m4.inverse(camera);
 
-    animSkin(gltf.skins[0], Math.sin(time) * .5);
+    animSkin(gltf, gltf.skins[0], Math.sin(time) * .5);
 
     const sharedUniforms = {
       u_lightDirection: m4.normalize([-1, 3, 5]),
