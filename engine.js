@@ -637,7 +637,7 @@ function lerpVec(input, target, percent) {
     // Make a view matrix from the camera matrix.
     const view = m4.inverse(camera);
 
-    animSkin(gltf, gltf.skins[0], Math.sin(time) * .5);
+    animSkin(gltf, gltf.skins[0], time);
 
     const sharedUniforms = {
       u_lightDirection: m4.normalize([-1, 3, 5]),
