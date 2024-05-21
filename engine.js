@@ -262,12 +262,21 @@ async function main() {
       gl.useProgram(meshProgramInfo.program);
       for (const primitive of mesh.primitives) {
         gl.bindVertexArray(primitive.vao);
-        twgl.setUniforms(meshProgramInfo, {
+        var uni = uniformsSetter(gl,skinProgramInfo)
+        uni.set({
+          u_projection: projection,
+          u_view: view,
+          u_world: node.worldMatrix,
+        })
+        uni.set(primitive.material.uniforms)
+        uni.set(sharedUniforms)
+        /*twgl.setUniforms(meshProgramInfo, {
           u_projection: projection,
           u_view: view,
           u_world: node.worldMatrix,
         }, primitive.material.uniforms, sharedUniforms);
-        twgl.drawBufferInfo(gl, primitive.bufferInfo);
+        twgl.drawBufferInfo(gl, primitive.bufferInfo);*/
+        gl.drawElements(gl.TRIANGLES, primitive.bufferInfo.numElements, gl.UNSIGNED_SHORT, 0);
       }
     }
   }
