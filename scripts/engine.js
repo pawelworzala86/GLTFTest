@@ -74,14 +74,6 @@ void main() {
 `;
 
 function CreateShader(gl,vertCode,fragCode){
- // var name = 'default'
-
-  //if(SHADERCACHE[name]){
-  //   return SHADERCACHE[name]
-  //}
-
-   //var vertCode = await get('/shaders/'+name+'.vert')
-    //    var fragCode = await get('/shaders/'+name+'.frag')
 
      function CreateShader(type,code){
         const shader = gl.createShader(type)
@@ -105,8 +97,6 @@ function CreateShader(gl,vertCode,fragCode){
         gl.attachShader(program, fragShader);
         gl.linkProgram(program);
 
-  //SHADERCACHE[name] = {program}
-
    return {program}
    
 }
@@ -122,21 +112,9 @@ async function main() {
     return;
   }
 
-  // Specify the locations of the attributes so they'll
-  // match across programs
-  const programOptions = {
-    attribLocations: {
-      a_POSITION: 0,
-      a_NORMAL: 1,
-      a_WEIGHTS_0: 2,
-      a_JOINTS_0: 3,
-    },
-  };
 
-  // compiles and links the shaders, looks up attribute and uniform locations
-  //const skinProgramInfo = twgl.createProgramInfo(gl, [skinVS, fs], programOptions);
+
   const skinProgramInfo = CreateShader(gl, skinVS, fs);
-  //const meshProgramInfo = twgl.createProgramInfo(gl, [meshVS, fs], programOptions);
   const meshProgramInfo = CreateShader(gl, meshVS, fs);
 
   class Skin {
@@ -144,9 +122,7 @@ async function main() {
       this.joints = joints;
       this.inverseBindMatrices = [];
       this.jointMatrices = [];
-      // allocate enough space for one matrix per joint
       this.jointData = new Float32Array(joints.length * 16);
-      // create views for each joint and inverseBindMatrix
       for (let i = 0; i < joints.length; ++i) {
         this.inverseBindMatrices.push(new Float32Array(
             inverseBindMatrixData.buffer,
@@ -157,7 +133,6 @@ async function main() {
             Float32Array.BYTES_PER_ELEMENT * 16 * i,
             16));
       }
-      // create a texture to hold the joint matrices
       this.jointTexture = gl.createTexture();
       gl.bindTexture(gl.TEXTURE_2D, this.jointTexture);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
@@ -166,18 +141,12 @@ async function main() {
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     }
     update(node) {
-      //const globalWorldInverse = m4.inverse(node.worldMatrix);
       let globalWorldInverse = mat4.create()
       mat4.invert(globalWorldInverse, node.worldMatrix);
-      // go through each joint and get its current worldMatrix
-      // apply the inverse bind matrices and store the
-      // entire result in the texture
       for (let j = 0; j < this.joints.length; ++j) {
         const joint = this.joints[j];
         const dst = this.jointMatrices[j];
-        //m4.multiply(globalWorldInverse, joint.worldMatrix, dst);
         mat4.multiply(dst, joint.worldMatrix, globalWorldInverse)
-        //m4.multiply(dst, this.inverseBindMatrices[j], dst);
         mat4.multiply(dst, dst, this.inverseBindMatrices[j])
       }
       gl.bindTexture(gl.TEXTURE_2D, this.jointTexture);
@@ -194,7 +163,6 @@ async function main() {
     }
     getMatrix(dst) {
       dst = dst || new Float32Array(16);
-      //m4.compose(this.position, this.rotation, this.scale, dst);
       mat4.fromRotationTranslationScale(dst, this.rotation, this.position, this.scale)
       return dst;
     }
@@ -229,12 +197,8 @@ async function main() {
       }
 
       if (parentWorldMatrix) {
-        // a matrix was passed in so do the math
-        ///m4.multiply(parentWorldMatrix, this.localMatrix, this.worldMatrix);
         mat4.multiply(this.worldMatrix, parentWorldMatrix, this.localMatrix);
       } else {
-        // no matrix was passed in so just copy local to world
-        //m4.copy(this.localMatrix, this.worldMatrix);
         mat4.copy(this.worldMatrix, this.localMatrix)
       }
 
@@ -280,17 +244,7 @@ async function main() {
         })
         uni.set(primitive.material.uniforms)
         uni.set(sharedUniforms)
-        /*twgl.setUniforms(skinProgramInfo, {
-          u_projection: projection,
-          u_view: view,
-          u_world: node.worldMatrix,
-          u_jointTexture: skin.jointTexture,
-          u_numJoints: skin.joints.length,
-        }, primitive.material.uniforms, sharedUniforms);*/
-        //twgl.drawBufferInfo(gl, primitive.bufferInfo);
-        //gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, primitive.bufferInfo.indices);
-        //gl.bindVertexArray(primitive.vao);
-            gl.drawElements(gl.TRIANGLES, primitive.bufferInfo.numElements, gl.UNSIGNED_SHORT, 0);
+        gl.drawElements(gl.TRIANGLES, primitive.bufferInfo.numElements, gl.UNSIGNED_SHORT, 0);
       }
     }
   }
@@ -312,12 +266,6 @@ async function main() {
         })
         uni.set(primitive.material.uniforms)
         uni.set(sharedUniforms)
-        /*twgl.setUniforms(meshProgramInfo, {
-          u_projection: projection,
-          u_view: view,
-          u_world: node.worldMatrix,
-        }, primitive.material.uniforms, sharedUniforms);
-        twgl.drawBufferInfo(gl, primitive.bufferInfo);*/
         gl.drawElements(gl.TRIANGLES, primitive.bufferInfo.numElements, gl.UNSIGNED_SHORT, 0);
       }
     }
@@ -585,16 +533,6 @@ async function main() {
 
         primitive.bufferInfo = bufferInfo;
 
-        // make a VAO for this primitive
-        // NOTE: This is problematic. In order to automagically
-        // setup the attributes we need a ProgramInfo since a ProgramInfo
-        // contains the type and size of each attribute. But, for this to
-        // work for all situation we'd need a ProgramInfo that uses every
-        // possible attribute and for all similar attributes to use the
-        // same location. For this particular situation we use
-        // skinProgramInfo and above where we compiled the shaders we
-        // set the locations but for a larger program we'd need some other
-        // solution
         //primitive.vao = vao//twgl.createVAOFromBufferInfo(gl, skinProgramInfo, primitive.bufferInfo);
         primitive.vao = createVAOFromBufferInfo(gl, skinProgramInfo, primitive.bufferInfo);
 
@@ -692,26 +630,8 @@ function lerpVec(input, target, percent) {
 
 
 
-  const origMatrices = new Map();
+  //const origMatrices = new Map();
   function animSkin(model, skin, a) {
-
-
-    /*for (let i = 0; i < skin.joints.length; ++i) {
-      const joint = skin.joints[i];
-      // if there is no matrix saved for model joint
-      if (!origMatrices.has(joint)) {
-        // save a matrix for joint
-        origMatrices.set(joint, joint.source.getMatrix());
-      }
-      // get the original matrix
-      const origMatrix = origMatrices.get(joint);
-      // rotate it
-      const m = m4.xRotate(origMatrix, a);
-      // decompose it back into position, rotation, scale
-      // into the joint
-      m4.decompose(m, joint.source.position, joint.source.rotation, joint.source.scale);
-    }*/
-
 
     if(!model.animData){
       model.animData = {frames: 15}
