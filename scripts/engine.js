@@ -112,10 +112,12 @@ function CreateShader(gl,vertCode,fragCode){
 }
 
 async function main() {
-  // Get A WebGL context
-  /** @type {HTMLCanvasElement} */
-  const canvas = document.querySelector("#canvas");
-  const gl = canvas.getContext("webgl2");
+
+  const canvas = document.querySelector("#canvas")
+  canvas.width = window.innerWidth
+  canvas.height = window.innerHeight
+
+  const gl = canvas.getContext("webgl2")
   if (!gl) {
     return;
   }
@@ -732,7 +734,7 @@ function lerpVec(input, target, percent) {
       model.animData.time=model.animData.time??0
 
   
-      const frametime=1.135
+      const frametime=0.0135
 
       model.animData.percent=model.animData.time/frametime
       model.animData.time+=a//delta
