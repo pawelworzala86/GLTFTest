@@ -377,15 +377,17 @@ async function main() {
 
     console.log(skinProgramInfo)
     console.log(primitivebufferInfo)
-    gl.useProgram(skinProgramInfo.program)
 
     var vao = gl.createVertexArray();
     gl.bindVertexArray(vao);
+
+    gl.useProgram(skinProgramInfo.program)
 
     for(let key of Object.keys(primitivebufferInfo.attribs)){
       gl.bindBuffer(gl.ARRAY_BUFFER, primitivebufferInfo.attribs[key].buffer);
       const attribute = gl.getAttribLocation(skinProgramInfo.program, key)
       if(attribute>-1){
+        console.log(key)
          gl.vertexAttribPointer(attribute, primitivebufferInfo.attribs[key].numComponents, 
           gl.FLOAT, false,0,0)
          gl.enableVertexAttribArray(attribute)
@@ -395,6 +397,8 @@ async function main() {
     if(primitivebufferInfo.indices){
       gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, primitivebufferInfo.indices);
     }
+
+    gl.bindVertexArray(null);
 
     return vao
 
@@ -482,10 +486,28 @@ async function main() {
     // setup meshes
     gltf.meshes.forEach((mesh) => {
       mesh.primitives.forEach((primitive) => {
+        var vao = gl.createVertexArray();
+        gl.bindVertexArray(vao);
+
         const attribs = {};
         let numElements;
         for (const [attribName, index] of Object.entries(primitive.attributes)) {
           const {accessor, buffer, stride} = getAccessorAndWebGLBuffer(gl, gltf, index);
+
+          let key = 'a_'+attribName
+          const attribute = gl.getAttribLocation(skinProgramInfo.program, key)
+          if(attribute>-1){
+            console.log(key)
+            if(key=='a_JOINTS_0'){
+              gl.vertexAttribIPointer(attribute, accessorTypeToNumComponents(accessor.type), 
+              gl.UNSIGNED_SHORT, false,0,0)
+            }else{
+              gl.vertexAttribPointer(attribute, accessorTypeToNumComponents(accessor.type), 
+                gl.FLOAT, false,0,0)
+            }
+            gl.enableVertexAttribArray(attribute)
+          }
+
           numElements = accessor.count;
           attribs[`a_${attribName}`] = {
             buffer,
@@ -520,7 +542,7 @@ async function main() {
         // skinProgramInfo and above where we compiled the shaders we
         // set the locations but for a larger program we'd need some other
         // solution
-        primitive.vao = twgl.createVAOFromBufferInfo(gl, skinProgramInfo, primitive.bufferInfo);
+        primitive.vao = vao//twgl.createVAOFromBufferInfo(gl, skinProgramInfo, primitive.bufferInfo);
         //primitive.vao = createVAOFromBufferInfo(gl, skinProgramInfo, primitive.bufferInfo);
 
         // save the material info for this primitive
