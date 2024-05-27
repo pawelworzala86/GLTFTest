@@ -642,8 +642,6 @@ function lerpVec(input, target, percent) {
       return
   }
 
-  //const skin=model['skins'][0]
-
       const animation=model.animations[0]
 
 
@@ -654,37 +652,18 @@ function lerpVec(input, target, percent) {
       model.animData.time=model.animData.time??0
 
   
-      //const frametime=1.5
       const speed = 0.1
 
-      //model.animData.percent=a/frametime
       model.animData.time+=a//delta
 
-      //model.animData.lap = model.animData.time
-
-      //while(model.animData.lap>0.1){
-      //  model.animData.lap-=0.1
-      //}
+    
       model.animData.percent = model.animData.time/speed
 
       if(model.animData.frame>10){
         model.animData.frame=0
         model.animData.time=0
       }
-      //const calcPercent=()=>{
-      //while(model.animData.percent>frametime){
-          //=Math.round(model.animData.time/0.1)
-          //model.animData.time=0
-          //model.animData.percent=0
-      //}
-      //}
-      //if(model.animData.frame>model.animData.frames){
-      //model.animData.frame=0
-      //calcPercent()
-      //}
-      //if(model.animData.time>frametime){
-      //calcPercent()
-      //}
+
       
 
     for(const channel of animation['channels']){
@@ -716,45 +695,31 @@ function lerpVec(input, target, percent) {
       }
       model.animData.frame--
 
-      //let fromVal=[value[0],value[1],value[2],value[3],]
   
       const newVal=lerpVec(fromVal, value, model.animData.percent)
 
       joint.source[fname]=newVal
-
-
-      //console.log('ENND JOINT',joint)
       }
 
-
-      //if(model.animData.time>0.1){
-      //  model.animData.frame++
-      //}
       while(model.animData.time>speed){
         model.animData.time-=speed
         model.animData.frame++
       }
       
-
-
-
-
-
-
-
-
-
-
   }
+
+
+
+
+
 
   let delta = 0
   let lastTime = 0
   function render(time) {
-    time *= 0.001;  // convert to seconds
+    time *= 0.001;
     delta = time-lastTime
     lastTime = time
 
-    //twgl.resizeCanvasToDisplaySize(gl.canvas);
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     gl.enable(gl.DEPTH_TEST);
     gl.enable(gl.CULL_FACE);
