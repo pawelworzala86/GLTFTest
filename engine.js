@@ -800,7 +800,7 @@ function lerpVec(input, target, percent) {
   function render(time) {
     time *= 0.001;  // convert to seconds
 
-    twgl.resizeCanvasToDisplaySize(gl.canvas);
+    //twgl.resizeCanvasToDisplaySize(gl.canvas);
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     gl.enable(gl.DEPTH_TEST);
     gl.enable(gl.CULL_FACE);
