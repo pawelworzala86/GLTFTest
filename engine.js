@@ -73,6 +73,44 @@ void main() {
 }
 `;
 
+function CreateShader(gl,vertCode,fragCode){
+ // var name = 'default'
+
+  //if(SHADERCACHE[name]){
+  //   return SHADERCACHE[name]
+  //}
+
+   //var vertCode = await get('/shaders/'+name+'.vert')
+    //    var fragCode = await get('/shaders/'+name+'.frag')
+
+     function CreateShader(type,code){
+        const shader = gl.createShader(type)
+        gl.shaderSource(shader,code)
+        gl.compileShader(shader)
+
+        const message = gl.getShaderInfoLog(shader);
+        if (message.length > 0) {
+           /* message may be an error or a warning */
+           throw message;
+           }
+
+        return shader
+     }
+
+        var vertShader = CreateShader(gl.VERTEX_SHADER,vertCode)
+        var fragShader = CreateShader(gl.FRAGMENT_SHADER,fragCode);
+
+        var program = gl.createProgram();
+        gl.attachShader(program, vertShader);
+        gl.attachShader(program, fragShader);
+        gl.linkProgram(program);
+
+  //SHADERCACHE[name] = {program}
+
+   return {program}
+   
+}
+
 async function main() {
   // Get A WebGL context
   /** @type {HTMLCanvasElement} */
@@ -94,8 +132,10 @@ async function main() {
   };
 
   // compiles and links the shaders, looks up attribute and uniform locations
-  const skinProgramInfo = twgl.createProgramInfo(gl, [skinVS, fs], programOptions);
-  const meshProgramInfo = twgl.createProgramInfo(gl, [meshVS, fs], programOptions);
+  //const skinProgramInfo = twgl.createProgramInfo(gl, [skinVS, fs], programOptions);
+  const skinProgramInfo = CreateShader(gl, skinVS, fs);
+  //const meshProgramInfo = twgl.createProgramInfo(gl, [meshVS, fs], programOptions);
+  const meshProgramInfo = CreateShader(gl, meshVS, fs);
 
   class Skin {
     constructor(joints, inverseBindMatrixData) {
