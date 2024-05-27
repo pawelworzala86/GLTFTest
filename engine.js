@@ -732,7 +732,7 @@ function lerpVec(input, target, percent) {
       model.animData.time=model.animData.time??0
 
   
-      const frametime=0.035
+      const frametime=1.135
 
       model.animData.percent=model.animData.time/frametime
       model.animData.time+=a//delta
