@@ -734,25 +734,37 @@ function lerpVec(input, target, percent) {
       model.animData.time=model.animData.time??0
 
   
-      const frametime=0.0135
+      //const frametime=1.5
+      const speed = 0.1
 
-      model.animData.percent=model.animData.time/frametime
+      //model.animData.percent=a/frametime
       model.animData.time+=a//delta
 
-      const calcPercent=()=>{
-      while(model.animData.percent>frametime){
-          model.animData.frame++
-          model.animData.time=0
-          model.animData.percent=0
+      //model.animData.lap = model.animData.time
+
+      //while(model.animData.lap>0.1){
+      //  model.animData.lap-=0.1
+      //}
+      model.animData.percent = model.animData.time/speed
+
+      if(model.animData.frame>10){
+        model.animData.frame=0
+        model.animData.time=0
       }
-      }
-      if(model.animData.frame>model.animData.frames){
-      model.animData.frame=0
-      calcPercent()
-      }
-      if(model.animData.time>frametime){
-      calcPercent()
-      }
+      //const calcPercent=()=>{
+      //while(model.animData.percent>frametime){
+          //=Math.round(model.animData.time/0.1)
+          //model.animData.time=0
+          //model.animData.percent=0
+      //}
+      //}
+      //if(model.animData.frame>model.animData.frames){
+      //model.animData.frame=0
+      //calcPercent()
+      //}
+      //if(model.animData.time>frametime){
+      //calcPercent()
+      //}
       
 
     for(const channel of animation['channels']){
@@ -771,21 +783,37 @@ function lerpVec(input, target, percent) {
       }
   
       if(fname==='rotation'){
-          var value=[accessor[(model.animData.frame*len)+0],accessor[(model.animData.frame*len)+1],accessor[(model.animData.frame*len)+2],accessor[(model.animData.frame*len)+3]]
+          var fromVal=[accessor[(model.animData.frame*len)+0],accessor[(model.animData.frame*len)+1],accessor[(model.animData.frame*len)+2],accessor[(model.animData.frame*len)+3]]
+      }else{
+          var fromVal=[accessor[(model.animData.frame*len)+0],accessor[(model.animData.frame*len)+1],accessor[(model.animData.frame*len)+2]]
+      }
+
+      model.animData.frame++
+      if(fname==='rotation'){
+        var value=[accessor[(model.animData.frame*len)+0],accessor[(model.animData.frame*len)+1],accessor[(model.animData.frame*len)+2],accessor[(model.animData.frame*len)+3]]
       }else{
           var value=[accessor[(model.animData.frame*len)+0],accessor[(model.animData.frame*len)+1],accessor[(model.animData.frame*len)+2]]
       }
+      model.animData.frame--
 
-      let fromVal=[value[0],value[1],value[2],value[3],]
+      //let fromVal=[value[0],value[1],value[2],value[3],]
   
       const newVal=lerpVec(fromVal, value, model.animData.percent)
 
       joint.source[fname]=newVal
 
+
       //console.log('ENND JOINT',joint)
       }
 
 
+      //if(model.animData.time>0.1){
+      //  model.animData.frame++
+      //}
+      while(model.animData.time>speed){
+        model.animData.time-=speed
+        model.animData.frame++
+      }
       
 
 
@@ -799,8 +827,12 @@ function lerpVec(input, target, percent) {
 
   }
 
+  let delta = 0
+  let lastTime = 0
   function render(time) {
     time *= 0.001;  // convert to seconds
+    delta = time-lastTime
+    lastTime = time
 
     //twgl.resizeCanvasToDisplaySize(gl.canvas);
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
@@ -829,7 +861,7 @@ function lerpVec(input, target, percent) {
     mat4.invert(view, camera);
 
 
-    animSkin(gltf, gltf.skins[0], time);
+    animSkin(gltf, gltf.skins[0], delta);
 
     let outVec = vec3.create()
     const sharedUniforms = {
