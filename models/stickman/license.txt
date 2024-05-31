@@ -1,0 +1,8 @@
+Model Information:
+* title:	Stickman
+* source:	https://sketchfab.com/3d-models/stickman-dd12c023678f4aa59bc4b5695a3c0e44
+* author:	Easy Game Studio (https://sketchfab.com/Jeremy_Zh)
+
+Model License:
+* license type:	SKETCHFAB Standard (https://sketchfab.com/licenses)
+* requirements:	Under basic restrictions, use worldwide, on all types of media, commercially or not, and in all types of derivative works

@@ -1,105 +1,6 @@
 var {mat4,vec3} = glMatrix
 
-const skinVS = `#version 300 es
-in vec4 a_POSITION;
-in vec3 a_NORMAL;
-in vec4 a_WEIGHTS_0;
-in uvec4 a_JOINTS_0;
 
-uniform mat4 u_projection;
-uniform mat4 u_view;
-uniform mat4 u_world;
-uniform sampler2D u_jointTexture;
-
-out vec3 v_normal;
-
-mat4 getBoneMatrix(uint jointNdx) {
-  return mat4(
-    texelFetch(u_jointTexture, ivec2(0, jointNdx), 0),
-    texelFetch(u_jointTexture, ivec2(1, jointNdx), 0),
-    texelFetch(u_jointTexture, ivec2(2, jointNdx), 0),
-    texelFetch(u_jointTexture, ivec2(3, jointNdx), 0));
-}
-
-void main() {
-  mat4 skinMatrix = getBoneMatrix(a_JOINTS_0[0]) * a_WEIGHTS_0[0] +
-                    getBoneMatrix(a_JOINTS_0[1]) * a_WEIGHTS_0[1] +
-                    getBoneMatrix(a_JOINTS_0[2]) * a_WEIGHTS_0[2] +
-                    getBoneMatrix(a_JOINTS_0[3]) * a_WEIGHTS_0[3];
-  mat4 world = u_world * skinMatrix;
-  gl_Position = u_projection * u_view * world * a_POSITION;
-  v_normal = mat3(world) * a_NORMAL;
-
-  // for debugging .. see article
-  //gl_Position = u_projection * u_view *  a_POSITION;
-  //v_normal = a_NORMAL;
-  //v_normal = a_WEIGHTS_0.xyz * 2. - 1.;
-  //v_normal = vec3(a_JOINTS_0.xyz) / float(textureSize(u_jointTexture, 0).y - 1) * 2. - 1.;
-}
-`;
-const fs = `#version 300 es
-precision highp float;
-
-in vec3 v_normal;
-
-uniform vec4 u_diffuse;
-uniform vec3 u_lightDirection;
-
-out vec4 outColor;
-
-void main () {
-  vec3 normal = normalize(v_normal);
-  float light = dot(u_lightDirection, normal) * .5 + .5;
-  outColor = vec4(u_diffuse.rgb * light, u_diffuse.a);
-
-  // for debugging .. see article
-  //outColor = vec4(1, 0, 0, 1);
-  //outColor = vec4(v_normal * .5 + .5, 1);
-}
-`;
-const meshVS = `#version 300 es
-in vec4 a_POSITION;
-in vec3 a_NORMAL;
-
-uniform mat4 u_projection;
-uniform mat4 u_view;
-uniform mat4 u_world;
-
-out vec3 v_normal;
-
-void main() {
-  gl_Position = u_projection * u_view * u_world * a_POSITION;
-  v_normal = mat3(u_world) * a_NORMAL;
-}
-`;
-
-function CreateShader(gl,vertCode,fragCode){
-
-     function CreateShader(type,code){
-        const shader = gl.createShader(type)
-        gl.shaderSource(shader,code)
-        gl.compileShader(shader)
-
-        const message = gl.getShaderInfoLog(shader);
-        if (message.length > 0) {
-           /* message may be an error or a warning */
-           throw message;
-           }
-
-        return shader
-     }
-
-        var vertShader = CreateShader(gl.VERTEX_SHADER,vertCode)
-        var fragShader = CreateShader(gl.FRAGMENT_SHADER,fragCode);
-
-        var program = gl.createProgram();
-        gl.attachShader(program, vertShader);
-        gl.attachShader(program, fragShader);
-        gl.linkProgram(program);
-
-   return {program}
-   
-}
 
 async function main() {
 
@@ -310,37 +211,6 @@ async function main() {
         '5126': Float32Array
     }[val]
 }
-  const glTypeToTypedArrayMap = {
-    '5120': Int8Array,    // gl.BYTE
-    '5121': Uint8Array,   // gl.UNSIGNED_BYTE
-    '5122': Int16Array,   // gl.SHORT
-    '5123': Uint16Array,  // gl.UNSIGNED_SHORT
-    '5124': Int32Array,   // gl.INT
-    '5125': Uint32Array,  // gl.UNSIGNED_INT
-    '5126': Float32Array, // gl.FLOAT
-  };
-
-  // Given a GL type return the TypedArray needed
-  function glTypeToTypedArray(type) {
-    return glTypeToTypedArrayMap[type] || throwNoKey(type);
-  }
-
-  // given an accessor index return both the accessor and
-  // a TypedArray for the correct portion of the buffer
-  function getAccessorTypedArrayAndStride(gl, gltf, accessorIndex) {
-    const accessor = gltf.accessors[accessorIndex];
-    const bufferView = gltf.bufferViews[accessor.bufferView];
-    const TypedArray = glTypeToTypedArray(accessor.componentType);
-    const buffer = gltf.buffers[bufferView.buffer];
-    return {
-      accessor,
-      array: new TypedArray(
-          buffer,
-          bufferView.byteOffset + (accessor.byteOffset || 0),
-          accessor.count * accessorTypeToNumComponents(accessor.type)),
-      stride: bufferView.byteStride || 0,
-    };
-  }
 
   // Given an accessor index return a WebGLBuffer and a stride
   function getAccessorAndWebGLBuffer(gl, gltf, accessorIndex) {
@@ -362,49 +232,6 @@ async function main() {
     };
   }
 
-
-  function createVAOFromBufferInfo(gl, skinProgramInfo, primitivebufferInfo){
-
-    console.log(skinProgramInfo)
-    console.log(primitivebufferInfo)
-
-    var vao = gl.createVertexArray();
-    gl.bindVertexArray(vao);
-
-    gl.useProgram(skinProgramInfo.program)
-
-    for(let key of Object.keys(primitivebufferInfo.attribs)){
-      gl.bindBuffer(gl.ARRAY_BUFFER, primitivebufferInfo.attribs[key].buffer);
-      const attribute = gl.getAttribLocation(skinProgramInfo.program, key)
-      /*if(attribute>-1){
-        console.log(key)
-         gl.vertexAttribPointer(attribute, primitivebufferInfo.attribs[key].numComponents, 
-          gl.FLOAT, false,0,0)
-         gl.enableVertexAttribArray(attribute)
-      }*/
-      if(attribute>-1){
-        console.log(key)
-        if(key=='a_JOINTS_0'){
-          gl.vertexAttribIPointer(attribute, primitivebufferInfo.attribs[key].numComponents, 
-          gl.UNSIGNED_SHORT, false,0,0)
-        }else{
-          gl.vertexAttribPointer(attribute, primitivebufferInfo.attribs[key].numComponents, 
-            gl.FLOAT, false,0,0)
-        }
-        gl.enableVertexAttribArray(attribute)
-      }
-    }
-
-    if(primitivebufferInfo.indices){
-      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, primitivebufferInfo.indices);
-    }
-
-    gl.bindVertexArray(null);
-
-    return vao
-
-  }
-
   function uniformsSetter(gl,shader){
        
     let sampler=0
@@ -413,6 +240,10 @@ async function main() {
   
     return {
         set(uniforms){
+
+          if(!uniforms){
+            return
+          }
             
             for(const key of Object.keys(uniforms)){
 
@@ -487,15 +318,15 @@ async function main() {
     // setup meshes
     gltf.meshes.forEach((mesh) => {
       mesh.primitives.forEach((primitive) => {
-        //var vao = gl.createVertexArray();
-        //gl.bindVertexArray(vao);
+        var vao = gl.createVertexArray();
+        gl.bindVertexArray(vao);
 
         const attribs = {};
         let numElements;
         for (const [attribName, index] of Object.entries(primitive.attributes)) {
           const {accessor, buffer, stride} = getAccessorAndWebGLBuffer(gl, gltf, index);
 
-          /*let key = 'a_'+attribName
+          let key = 'a_'+attribName
           const attribute = gl.getAttribLocation(skinProgramInfo.program, key)
           if(attribute>-1){
             console.log(key)
@@ -507,7 +338,7 @@ async function main() {
                 gl.FLOAT, false,0,0)
             }
             gl.enableVertexAttribArray(attribute)
-          }*/
+          }
 
           numElements = accessor.count;
           attribs[`a_${attribName}`] = {
@@ -533,8 +364,8 @@ async function main() {
 
         primitive.bufferInfo = bufferInfo;
 
-        //primitive.vao = vao//twgl.createVAOFromBufferInfo(gl, skinProgramInfo, primitive.bufferInfo);
-        primitive.vao = createVAOFromBufferInfo(gl, skinProgramInfo, primitive.bufferInfo);
+        primitive.vao = vao//twgl.createVAOFromBufferInfo(gl, skinProgramInfo, primitive.bufferInfo);
+        //primitive.vao = createVAOFromBufferInfo(gl, skinProgramInfo, primitive.bufferInfo);
 
         // save the material info for this primitive
         primitive.material = gltf.materials && gltf.materials[primitive.material] || defaultMaterial;
@@ -559,8 +390,8 @@ async function main() {
     // setup skins
     gltf.skins = gltf.skins.map((skin) => {
       const joints = skin.joints.map(ndx => gltf.nodes[ndx]);
-      const {stride, array} = getAccessorTypedArrayAndStride(gl, gltf, skin.inverseBindMatrices);
-      return new Skin(joints, array);
+      //const {stride, array} = gltf.data[skin.inverseBindMatrices]//getAccessorTypedArrayAndStride(gl, gltf, skin.inverseBindMatrices);
+      return new Skin(joints, gltf.data[skin.inverseBindMatrices]);
     });
 
     // Add SkinRenderers to nodes with skins
@@ -581,6 +412,8 @@ async function main() {
       scene.root = new Node(new TRS(), scene.name);
       addChildren(gltf.nodes, scene.root, scene.nodes);
     }
+
+    console.log('gltf',gltf)
 
     return gltf;
   }
@@ -609,6 +442,7 @@ async function main() {
   }
 
   const gltf = await loadGLTF('https://webgl2fundamentals.org/webgl/resources/models/killer_whale/whale.CYCLES.gltf');
+  //const gltf = await loadGLTF('/models/stickman/scene.gltf');
 
   function degToRad(deg) {
     return deg * Math.PI / 180;
@@ -723,7 +557,7 @@ function lerpVec(input, target, percent) {
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     gl.enable(gl.DEPTH_TEST);
     gl.enable(gl.CULL_FACE);
-    gl.clearColor(.1, .1, .1, 1);
+    gl.clearColor(.5, .5, .5, 1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     const fieldOfViewRadians = degToRad(60);
@@ -731,8 +565,8 @@ function lerpVec(input, target, percent) {
     const projection = mat4.create()
     mat4.perspective(projection, fieldOfViewRadians, aspect, 1, 2000);
 
-    const cameraPosition = [10, 0, -5];
-    const target = [0, 0, -10];
+    const cameraPosition = [0, 0, -5];
+    const target = [0, 0, 0];
     // for debugging .. see article
     // const cameraPosition = [5, 0, 5];
     // const target = [0, 0, 0];
