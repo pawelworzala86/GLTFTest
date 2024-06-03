@@ -441,7 +441,7 @@ async function main() {
     return loadFile(url, 'json');
   }
 
-  const gltf = await loadGLTF('https://webgl2fundamentals.org/webgl/resources/models/killer_whale/whale.CYCLES.gltf');
+  const gltf = await loadGLTF('/models/whale/whale.CYCLES.gltf');
   //const gltf = await loadGLTF('/models/stickman/scene.gltf');
 
   function degToRad(deg) {
@@ -563,9 +563,9 @@ function lerpVec(input, target, percent) {
     const fieldOfViewRadians = degToRad(60);
     const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
     const projection = mat4.create()
-    mat4.perspective(projection, fieldOfViewRadians, aspect, 1, 2000);
+    mat4.perspective(projection, fieldOfViewRadians, aspect, 1, 20000);
 
-    const cameraPosition = [0, 0, -5];
+    const cameraPosition = [0, 0, -200];
     const target = [0, 0, 0];
     // for debugging .. see article
     // const cameraPosition = [5, 0, 5];
@@ -576,8 +576,11 @@ function lerpVec(input, target, percent) {
     mat4.lookAt(camera, cameraPosition, target, up);
 
     // Make a view matrix from the camera matrix.
-    const view = mat4.create()
+    let view = mat4.create()
     mat4.invert(view, camera);
+
+    view = mat4.create()
+    view[14] = -200
 
 
     animSkin(gltf, gltf.skins[0], delta);
