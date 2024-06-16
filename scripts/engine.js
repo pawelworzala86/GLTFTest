@@ -441,8 +441,8 @@ async function main() {
     return loadFile(url, 'json');
   }
 
-  const gltf = await loadGLTF('/models/whale/whale.CYCLES.gltf');
-  //const gltf = await loadGLTF('/models/stickman/scene.gltf');
+  //const gltf = await loadGLTF('/models/whale/whale.CYCLES.gltf');
+  const gltf = await loadGLTF('/models/stickman/scene.gltf');
 
   function degToRad(deg) {
     return deg * Math.PI / 180;
