@@ -441,9 +441,9 @@ async function main() {
     return loadFile(url, 'json');
   }
 
-  const gltf = await loadGLTF('/models/whale/whale.CYCLES.gltf');
+  //const gltf = await loadGLTF('/models/whale/whale.CYCLES.gltf');
   //const gltf = await loadGLTF('/models/stickman/scene.gltf');
-  //const gltf = await loadGLTF('/models/henry_stickmin/scene.gltf');
+  const gltf = await loadGLTF('/models/tst/scene.gltf');
   
 
   function degToRad(deg) {
@@ -567,7 +567,7 @@ function lerpVec(input, target, percent) {
     const projection = mat4.create()
     mat4.perspective(projection, fieldOfViewRadians, aspect, 1, 20000);
 
-    const cameraPosition = [0, 0, -200];
+    const cameraPosition = [0, 0, -20];
     const target = [0, 0, 0];
     // for debugging .. see article
     // const cameraPosition = [5, 0, 5];
