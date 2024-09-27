@@ -441,9 +441,9 @@ async function main() {
     return loadFile(url, 'json');
   }
 
-  //const gltf = await loadGLTF('/models/whale/whale.CYCLES.gltf');
+  const gltf = await loadGLTF('/models/whale/whale.CYCLES.gltf');
   //const gltf = await loadGLTF('/models/stickman/scene.gltf');
-  const gltf = await loadGLTF('/models/tst/scene.gltf');
+  //const gltf = await loadGLTF('/models/tst/scene.gltf');
   
 
   function degToRad(deg) {
@@ -581,11 +581,10 @@ function lerpVec(input, target, percent) {
     let view = mat4.create()
     mat4.invert(view, camera);
 
-    view = mat4.create()
-    view[14] = -200
+    //view = mat4.create()
+    //view[14] = -20
 
-
-    animSkin(gltf, gltf.skins[0], delta);
+    //animSkin(gltf, gltf.skins[0], delta);
 
     let outVec = vec3.create()
     const sharedUniforms = {
